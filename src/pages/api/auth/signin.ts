@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
     await auth.verifyIdToken(idToken);
   } catch (error: any) {
     console.log(error);
-    return new Response(error, { status: 500 });
+    return new Response(JSON.stringify(error), { status: 500 });
   }
 
   /* Create and set session cookie */
