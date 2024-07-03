@@ -66,6 +66,7 @@ if (Astro.cookies.has("__session")) {
           Authorization: `Bearer ${idToken}`,
         },
       });
+      console.log(await response.json());
 
       if (response.redirected) {
         window.location.assign(response.url);
