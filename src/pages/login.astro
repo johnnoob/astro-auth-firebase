@@ -1,38 +1,90 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import Input from "@/components/Input.astro";
-import Button from "@/components/Button.astro";
+import { app } from "../firebase/server";
+import { getAuth } from "firebase-admin/auth";
+
+/* Check if the user is authenticated */
+const auth = getAuth(app);
+if (Astro.cookies.has("__session")) {
+  const sessionCookie = Astro.cookies.get("__session")?.value;
+  if (sessionCookie) {
+    const decodedCookie = await auth.verifySessionCookie(sessionCookie);
+    if (decodedCookie) {
+      return Astro.redirect("/dashboard");
+    }
+  }
+}
 ---
 
 <BaseLayout>
   <div class="grid gap-8">
-    <h1>Login to account</h1>
-    <form class="grid gap-4" id="login-account">
-      <Input name="email" label="Your Email" type="email" />
-      <Input name="password" label="Your Password" type="password" />
-      <Button intent="accent">Login Account</Button>
+    <h1>Sign in</h1>
+    <p>New here? <a href="/register">Create an account</a></p>
+    <form action="/api/auth/signin" method="post">
+      <label for="email" for="email">Email</label>
+      <input type="email" name="email" id="email" />
+      <label for="password">Password</label>
+      <input type="password" name="password" id="password" />
+      <button type="submit">Login</button>
     </form>
+    <button id="google">Sign in with Google</button>
   </div>
 
   <script>
-    import { isInputError } from "astro:actions";
-    import { actions } from "astro:actions";
-    const loginForm = document.querySelector(
-      "#login-account"
-    ) as HTMLFormElement;
-    loginForm.addEventListener("submit", async (e) => {
+    import {
+      getAuth,
+      inMemoryPersistence,
+      signInWithEmailAndPassword,
+      GoogleAuthProvider,
+      signInWithPopup,
+    } from "firebase/auth";
+    import { app } from "../firebase/config";
+
+    const auth = getAuth(app);
+    // This will prevent the browser from storing session data
+    auth.setPersistence(inMemoryPersistence);
+
+    const form = document.querySelector("form") as HTMLFormElement;
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const { data, error } = await actions.loginAccount.safe(
-        new FormData(loginForm)
-      );
-      if (error) {
-        console.log(error);
-        if (isInputError(error)) {
-          console.log(error.fields);
-        }
+      const formData = new FormData(form);
+      const email = formData.get("email")?.toString();
+      const password = formData.get("password")?.toString();
+
+      if (!email || !password) {
         return;
       }
-      window.location.reload();
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const idToken = await userCredential.user.getIdToken();
+      const response = await fetch("/api/auth/signin", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (response.redirected) {
+        window.location.assign(response.url);
+      }
+    });
+    const googleSignin = document.querySelector("#google") as HTMLButtonElement;
+    googleSignin.addEventListener("click", async () => {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const idToken = await userCredential.user.getIdToken();
+      const res = await fetch("/api/auth/signin", {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (res.redirected) {
+        window.location.assign(res.url);
+      }
     });
   </script>
 </BaseLayout>

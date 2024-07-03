@@ -5,34 +5,15 @@ import Button from "@/components/Button.astro";
 ---
 
 <BaseLayout>
-  <div class="grid gap-8">
-    <h1>Create a new account</h1>
-    <form class="grid gap-4" id="create-account">
-      <Input name="email" label="Your Email" type="email" />
-      <Input name="password" label="Your Password" type="password" />
-      <Button intent="accent">Create Account</Button>
-    </form>
-  </div>
-
-  <script>
-    import { isInputError } from "astro:actions";
-    import { actions } from "astro:actions";
-    const createForm = document.querySelector(
-      "#create-account"
-    ) as HTMLFormElement;
-    createForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const { data, error } = await actions.createAccount.safe(
-        new FormData(createForm)
-      );
-      if (error) {
-        console.log(error);
-        if (isInputError(error)) {
-          console.log(error.fields);
-        }
-        return;
-      }
-      window.location.reload();
-    });
-  </script>
+  <h1>Register</h1>
+  <p>Already have an account? <a href="/signin">Sign in</a></p>
+  <form action="/api/auth/register" method="post">
+    <label for="name">Name</label>
+    <input type="text" name="name" id="name" />
+    <label for="email" for="email">Email</label>
+    <input type="email" name="email" id="email" />
+    <label for="password">Password</label>
+    <input type="password" name="password" id="password" />
+    <button type="submit">Login</button>
+  </form>
 </BaseLayout>

@@ -6,6 +6,8 @@ import Button from "@/components/Button.astro";
 <BaseLayout>
   <div class="grid gap-12">
     <h1>Homepage</h1>
+    <button id="google">Google</button>
+    <button id="log-out">Log out Google</button>
     <form id="logout-form">
       <Button>Logout</Button>
     </form>
@@ -13,6 +15,13 @@ import Button from "@/components/Button.astro";
   <script>
     import { isInputError } from "astro:actions";
     import { actions } from "astro:actions";
+    import {
+      getAuth,
+      signInWithPopup,
+      GoogleAuthProvider,
+      signOut,
+    } from "firebase/auth";
+    import { projectAuth } from "@/firebase/config";
     const logoutForm = document.querySelector(
       "#logout-form"
     ) as HTMLFormElement;
@@ -27,6 +36,41 @@ import Button from "@/components/Button.astro";
         return;
       }
       window.location.reload();
+    });
+
+    const googleButton = document.querySelector("#google") as HTMLButtonElement;
+    googleButton.addEventListener("click", async () => {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(projectAuth, provider)
+        .then((result) => {
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          if (credential) {
+            const token = credential.accessToken;
+          }
+          const user = result.user;
+          return user;
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          const email = error.customData.email;
+          const credential = GoogleAuthProvider.credentialFromError(error);
+        });
+      console.log(result);
+      console.log(projectAuth.currentUser);
+    });
+    const logoutButton = document.querySelector(
+      "#log-out"
+    ) as HTMLButtonElement;
+    logoutButton.addEventListener("click", async () => {
+      await projectAuth
+        .signOut()
+        .then(() => {
+          console.log("log out");
+        })
+        .catch((error) => {
+          // An error happened.
+        });
     });
   </script>
 </BaseLayout>
